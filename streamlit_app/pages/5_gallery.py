@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 
 from components.artifact_viewer import render_artifact, render_artifact_metadata
 
-st.set_page_config(page_title="Gallery", layout="wide")
 st.title("Artifact Gallery")
 
 API_BASE = st.session_state.get("api_base", "http://localhost:8000")
