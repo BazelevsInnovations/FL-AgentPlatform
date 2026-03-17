@@ -12,8 +12,8 @@ FAL_IMAGE_MODELS = {
         "params": {
             "aspect_ratio": {
                 "type": "select",
-                "options": ["auto", "1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4", "5:4", "4:5", "21:9"],
-                "default": "auto",
+                "options": ["auto", "1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4", "5:4", "4:5", "21:9", "4:1", "1:4", "8:1", "1:8"],
+                "default": "1:1",
                 "description": "Aspect ratio of the generated image",
             },
             "num_images": {
@@ -21,16 +21,39 @@ FAL_IMAGE_MODELS = {
                 "description": "Number of images to generate (1-4)",
             },
             "output_format": {
-                "type": "select", "options": ["png", "jpeg"], "default": "png",
+                "type": "select", "options": ["png", "jpeg", "webp"], "default": "png",
                 "description": "Output image format",
             },
             "safety_tolerance": {
                 "type": "select", "options": ["1", "2", "3", "4", "5", "6"], "default": "4",
                 "description": "Content moderation strictness (1=strict, 6=relaxed)",
             },
-            "seed": {
-                "type": "int", "min": 0, "max": 2147483647, "default": None,
-                "description": "Random seed for reproducibility",
+            "limit_generations": {
+                "type": "bool", "default": False,
+                "description": "Limit to 1 generation per prompt round, ignoring prompt instructions",
+            },
+        },
+    },
+    "fal-ai/nano-banana/edit": {
+        "display": "Nano Banana (Image Edit)",
+        "params": {
+            "aspect_ratio": {
+                "type": "select",
+                "options": ["auto", "1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4", "5:4", "4:5", "21:9", "4:1", "1:4", "8:1", "1:8"],
+                "default": "1:1",
+                "description": "Aspect ratio of the generated image",
+            },
+            "num_images": {
+                "type": "int", "min": 1, "max": 4, "default": 1,
+                "description": "Number of images to generate",
+            },
+            "output_format": {
+                "type": "select", "options": ["png", "jpeg", "webp"], "default": "png",
+                "description": "Output image format",
+            },
+            "safety_tolerance": {
+                "type": "select", "options": ["1", "2", "3", "4", "5", "6"], "default": "4",
+                "description": "Content moderation strictness (1=strict, 6=relaxed)",
             },
         },
     },
@@ -41,18 +64,18 @@ FAL_IMAGE_MODELS = {
                 "type": "select",
                 "options": ["auto", "1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4", "5:4", "4:5", "21:9", "4:1", "1:4", "8:1", "1:8"],
                 "default": "auto",
-                "description": "Aspect ratio (supports extreme ratios like 4:1, 8:1)",
+                "description": "Aspect ratio ('auto' lets the model choose)",
             },
             "resolution": {
-                "type": "select", "options": ["0.5K", "1K", "2K", "4K"], "default": "1K",
-                "description": "Output resolution",
+                "type": "select", "options": ["1K", "2K", "4K"], "default": "1K",
+                "description": "Native output resolution (not upscaled)",
             },
             "num_images": {
                 "type": "int", "min": 1, "max": 4, "default": 1,
                 "description": "Number of images to generate (1-4)",
             },
             "output_format": {
-                "type": "select", "options": ["png", "jpeg"], "default": "png",
+                "type": "select", "options": ["png", "jpeg", "webp"], "default": "png",
                 "description": "Output image format",
             },
             "safety_tolerance": {
@@ -61,19 +84,50 @@ FAL_IMAGE_MODELS = {
             },
             "enable_web_search": {
                 "type": "bool", "default": False,
-                "description": "Enable Google Search grounding for real-world references",
+                "description": "Enable Google Search grounding before generation (+$0.015)",
             },
             "thinking_level": {
                 "type": "select", "options": ["none", "minimal", "high"], "default": "none",
-                "description": "Model reasoning depth before generation",
+                "description": "Model reasoning depth ('none' disables, 'high' +$0.002)",
             },
             "limit_generations": {
-                "type": "bool", "default": True,
+                "type": "bool", "default": False,
                 "description": "Limit to 1 generation per prompt round",
             },
-            "seed": {
-                "type": "int", "min": 0, "max": 2147483647, "default": None,
-                "description": "Random seed for reproducibility",
+        },
+    },
+    "fal-ai/nano-banana-2/edit": {
+        "display": "Nano Banana 2 (Image Edit)",
+        "params": {
+            "aspect_ratio": {
+                "type": "select",
+                "options": ["auto", "1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4", "5:4", "4:5", "21:9", "4:1", "1:4", "8:1", "1:8"],
+                "default": "auto",
+                "description": "Aspect ratio",
+            },
+            "resolution": {
+                "type": "select", "options": ["1K", "2K", "4K"], "default": "1K",
+                "description": "Native output resolution",
+            },
+            "num_images": {
+                "type": "int", "min": 1, "max": 4, "default": 1,
+                "description": "Number of images to generate",
+            },
+            "output_format": {
+                "type": "select", "options": ["png", "jpeg", "webp"], "default": "png",
+                "description": "Output image format",
+            },
+            "safety_tolerance": {
+                "type": "select", "options": ["1", "2", "3", "4", "5", "6"], "default": "4",
+                "description": "Content moderation strictness",
+            },
+            "enable_web_search": {
+                "type": "bool", "default": False,
+                "description": "Enable Google Search grounding",
+            },
+            "thinking_level": {
+                "type": "select", "options": ["none", "minimal", "high"], "default": "none",
+                "description": "Model reasoning depth",
             },
         },
     },
@@ -167,12 +221,12 @@ FAL_VIDEO_MODELS = {
                 "description": "Prompt adherence (lower=creative, higher=strict)",
             },
             "negative_prompt": {
-                "type": "text", "default": "",
-                "description": "What to avoid in generation",
+                "type": "text", "default": "blur, distort, and low quality",
+                "description": "Elements to avoid in generation",
             },
-            "with_audio": {
-                "type": "bool", "default": False,
-                "description": "Generate native audio (Chinese/English)",
+            "generate_audio": {
+                "type": "bool", "default": True,
+                "description": "Generate native audio (Chinese/English voice)",
             },
         },
     },
@@ -192,12 +246,87 @@ FAL_VIDEO_MODELS = {
                 "description": "Prompt adherence",
             },
             "negative_prompt": {
-                "type": "text", "default": "",
-                "description": "What to avoid",
+                "type": "text", "default": "blur, distort, and low quality",
+                "description": "Elements to avoid",
             },
-            "with_audio": {
-                "type": "bool", "default": False,
+            "generate_audio": {
+                "type": "bool", "default": True,
                 "description": "Generate native audio",
+            },
+        },
+    },
+    "fal-ai/kling-video/v3/standard/image-to-video": {
+        "display": "Kling 3.0 Standard (Image-to-Video)",
+        "params": {
+            "duration": {
+                "type": "select", "options": ["5", "10"], "default": "5",
+                "description": "Video duration in seconds",
+            },
+            "aspect_ratio": {
+                "type": "select", "options": ["16:9", "9:16", "1:1"], "default": "16:9",
+                "description": "Video aspect ratio",
+            },
+            "cfg_scale": {
+                "type": "float", "min": 0.0, "max": 1.0, "default": 0.5,
+                "description": "Prompt adherence",
+            },
+            "negative_prompt": {
+                "type": "text", "default": "blur, distort, and low quality",
+                "description": "Elements to avoid",
+            },
+            "generate_audio": {
+                "type": "bool", "default": True,
+                "description": "Generate native audio",
+            },
+        },
+    },
+    "fal-ai/kling-video/v3/pro/image-to-video": {
+        "display": "Kling 3.0 Pro (Image-to-Video)",
+        "params": {
+            "duration": {
+                "type": "select", "options": ["5", "10"], "default": "5",
+                "description": "Video duration in seconds",
+            },
+            "aspect_ratio": {
+                "type": "select", "options": ["16:9", "9:16", "1:1"], "default": "16:9",
+                "description": "Video aspect ratio",
+            },
+            "cfg_scale": {
+                "type": "float", "min": 0.0, "max": 1.0, "default": 0.5,
+                "description": "Prompt adherence",
+            },
+            "negative_prompt": {
+                "type": "text", "default": "blur, distort, and low quality",
+                "description": "Elements to avoid",
+            },
+            "generate_audio": {
+                "type": "bool", "default": True,
+                "description": "Generate native audio",
+            },
+        },
+    },
+    "fal-ai/kling-video/o1/standard/image-to-video": {
+        "display": "Kling O1 Standard (Image-to-Video)",
+        "params": {
+            "duration": {
+                "type": "select", "options": ["5", "10"], "default": "5",
+                "description": "Video duration in seconds",
+            },
+            "aspect_ratio": {
+                "type": "select", "options": ["16:9", "9:16", "1:1", "auto"], "default": "16:9",
+                "description": "Video aspect ratio",
+            },
+            "cfg_scale": {
+                "type": "float", "min": 0.0, "max": 1.0, "default": 0.5,
+                "description": "Prompt adherence",
+            },
+            "negative_prompt": {
+                "type": "text", "default": "",
+                "description": "Elements to avoid",
+            },
+            "generate_audio": {
+                "type": "bool", "default": True,
+                "description": "Generate native audio (Chinese/English)",
             },
         },
     },
@@ -209,40 +338,44 @@ FAL_VIDEO_MODELS = {
                 "description": "Video duration in seconds",
             },
             "aspect_ratio": {
-                "type": "select", "options": ["16:9", "9:16", "1:1"], "default": "16:9",
+                "type": "select", "options": ["16:9", "9:16", "1:1", "auto"], "default": "16:9",
                 "description": "Video aspect ratio",
             },
             "cfg_scale": {
                 "type": "float", "min": 0.0, "max": 1.0, "default": 0.5,
                 "description": "Prompt adherence",
             },
-            "with_audio": {
-                "type": "bool", "default": False,
-                "description": "Generate native audio",
-            },
             "negative_prompt": {
                 "type": "text", "default": "",
-                "description": "What to avoid",
+                "description": "Elements to avoid",
+            },
+            "generate_audio": {
+                "type": "bool", "default": True,
+                "description": "Generate native audio",
             },
         },
     },
-    "fal-ai/kling-video/o3/standard/image-to-video": {
-        "display": "Kling O3 Standard (Image-to-Video)",
+    "fal-ai/kling-video/o1/image-to-video": {
+        "display": "Kling O1 Pro (First/Last Frame to Video)",
         "params": {
             "duration": {
                 "type": "select", "options": ["5", "10"], "default": "5",
                 "description": "Video duration in seconds",
             },
             "aspect_ratio": {
-                "type": "select", "options": ["16:9", "9:16", "1:1"], "default": "16:9",
+                "type": "select", "options": ["16:9", "9:16", "1:1", "auto"], "default": "16:9",
                 "description": "Video aspect ratio",
             },
             "cfg_scale": {
                 "type": "float", "min": 0.0, "max": 1.0, "default": 0.5,
                 "description": "Prompt adherence",
             },
-            "with_audio": {
-                "type": "bool", "default": False,
+            "negative_prompt": {
+                "type": "text", "default": "",
+                "description": "Elements to avoid",
+            },
+            "generate_audio": {
+                "type": "bool", "default": True,
                 "description": "Generate native audio",
             },
         },
@@ -266,9 +399,17 @@ FAL_VIDEO_MODELS = {
                 "type": "bool", "default": True,
                 "description": "Generate audio for the video",
             },
+            "enhance_prompt": {
+                "type": "bool", "default": False,
+                "description": "Auto-enrich prompt with cinematographic terminology",
+            },
+            "negative_prompt": {
+                "type": "text", "default": "",
+                "description": "Elements to avoid in generation",
+            },
             "auto_fix": {
                 "type": "bool", "default": True,
-                "description": "Auto-fix prompts that fail content policy",
+                "description": "Auto-rewrite prompts that fail content policy",
             },
             "safety_tolerance": {
                 "type": "select", "options": ["1", "2", "3", "4", "5", "6"], "default": "4",
@@ -298,6 +439,47 @@ FAL_VIDEO_MODELS = {
             "generate_audio": {
                 "type": "bool", "default": True,
                 "description": "Generate audio",
+            },
+            "enhance_prompt": {
+                "type": "bool", "default": False,
+                "description": "Auto-enrich prompt with cinematographic terminology",
+            },
+            "negative_prompt": {
+                "type": "text", "default": "",
+                "description": "Elements to avoid",
+            },
+            "safety_tolerance": {
+                "type": "select", "options": ["1", "2", "3", "4", "5", "6"], "default": "4",
+                "description": "Content moderation strictness",
+            },
+            "seed": {
+                "type": "int", "min": 0, "max": 2147483647, "default": None,
+                "description": "Random seed",
+            },
+        },
+    },
+    "fal-ai/veo3/image-to-video": {
+        "display": "Veo 3 (Image-to-Video)",
+        "params": {
+            "duration": {
+                "type": "select", "options": ["4s", "6s", "8s"], "default": "8s",
+                "description": "Video duration",
+            },
+            "aspect_ratio": {
+                "type": "select", "options": ["16:9", "9:16"], "default": "16:9",
+                "description": "Video aspect ratio",
+            },
+            "resolution": {
+                "type": "select", "options": ["720p", "1080p"], "default": "720p",
+                "description": "Output resolution",
+            },
+            "generate_audio": {
+                "type": "bool", "default": True,
+                "description": "Generate audio",
+            },
+            "negative_prompt": {
+                "type": "text", "default": "",
+                "description": "Elements to avoid",
             },
             "safety_tolerance": {
                 "type": "select", "options": ["1", "2", "3", "4", "5", "6"], "default": "4",
