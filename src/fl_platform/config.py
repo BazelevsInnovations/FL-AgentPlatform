@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     default_llm_provider: str = "stub"  # "stub" | "claude" | "openai"
     anthropic_api_key: str = ""
     openai_api_key: str = ""
-    default_llm_model: str = "claude-sonnet-4-6-20250620"
+    default_llm_model: str = "claude-sonnet-4-6"
 
     # FAL.AI
     fal_api_key: str = ""

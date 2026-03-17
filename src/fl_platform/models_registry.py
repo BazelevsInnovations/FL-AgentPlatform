@@ -1,9 +1,8 @@
 """Registry of available models and their parameters for each executor type."""
 
 LLM_MODELS = {
-    "claude-sonnet-4-6-20250620": {"display": "Claude Sonnet 4.6"},
-    "claude-opus-4-6-20250620": {"display": "Claude Opus 4.6"},
-    "gemini-2.5-pro": {"display": "Gemini 2.5 Pro"},
+    "claude-sonnet-4-6": {"display": "Claude Sonnet 4.6"},
+    "claude-opus-4-6": {"display": "Claude Opus 4.6"},
 }
 
 FAL_IMAGE_MODELS = {
