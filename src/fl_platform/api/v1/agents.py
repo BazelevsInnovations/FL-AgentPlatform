@@ -11,8 +11,10 @@ from fl_platform.config import Settings
 from fl_platform.db.engine import get_db_session
 from fl_platform.dependencies import get_settings
 from fl_platform.pipeline.dag import PipelineDAG
+from fl_platform.agents.registry import list_departments
 from fl_platform.schemas.agent import (
     AgentInfo,
+    ArtifactDetailResponse,
     AgentRunRequest,
     AgentRunResponse,
     ArtifactResponse,
@@ -101,6 +103,45 @@ async def run_pipeline_all(
         raise HTTPException(404, "Project not found")
     results = await agent_service.run_all(db, project, settings)
     return results
+
+
+@router.get("/projects/{project_id}/gallery")
+async def get_gallery(
+    project_id: uuid.UUID,
+    agent_name: str | None = None,
+    artifact_type: str | None = None,
+    step: int | None = None,
+    department: str | None = None,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Gallery endpoint: artifacts enriched with agent/run metadata."""
+    items = await agent_service.get_artifacts_detail(
+        db, project_id,
+        agent_name=agent_name,
+        artifact_type=artifact_type,
+        step=step,
+        department=department,
+    )
+    return items
+
+
+@router.get("/projects/{project_id}/gallery/filters")
+async def get_gallery_filters(
+    project_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Return available filter values for the gallery."""
+    all_items = await agent_service.get_artifacts_detail(db, project_id)
+    agent_names = sorted({item["agent_name"] for item in all_items})
+    types = sorted({item["artifact_type"] for item in all_items})
+    steps = sorted({item["step"] for item in all_items})
+    departments = sorted({item["department"] for item in all_items})
+    return {
+        "agent_names": agent_names,
+        "artifact_types": types,
+        "steps": steps,
+        "departments": departments,
+    }
 
 
 @router.get("/projects/{project_id}/artifacts", response_model=list[ArtifactResponse])

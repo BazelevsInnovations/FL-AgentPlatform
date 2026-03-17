@@ -47,6 +47,27 @@ class ArtifactResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ArtifactDetailResponse(BaseModel):
+    """Extended artifact info with agent run metadata for the gallery."""
+
+    id: uuid.UUID
+    name: str
+    artifact_type: str
+    content_text: str | None
+    file_path: str | None
+    created_at: datetime
+    # From AgentRun
+    agent_name: str
+    agent_display_name: str
+    department: str
+    step: int
+    run_status: str
+    started_at: datetime | None
+    completed_at: datetime | None
+    # From PromptHistory / AgentConfig
+    model_id: str | None
+
+
 class PromptRead(BaseModel):
     agent_name: str
     system_prompt: str
