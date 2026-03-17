@@ -165,7 +165,7 @@ if selected:
     run_extra_params = None
     executor_type = agent["executor_type"]
 
-    if executor_type in ("fal_image", "fal_video"):
+    if executor_type in ("llm", "fal_image", "fal_video"):
         try:
             models_resp = httpx.get(
                 f"{API_BASE}/api/v1/models/{executor_type}", timeout=10,
@@ -243,8 +243,8 @@ if selected:
                 if chosen > 0:
                     run_input_params[sel["key"]] = items[chosen - 1]
 
-            except Exception:
-                pass
+            except Exception as e:
+                st.caption(f"{sel['label']}: error loading — {e}")
 
     # --- Reference images (auto-resolved + manual upload) ---
     ref_sources = agent.get("reference_sources", [])
@@ -271,8 +271,8 @@ if selected:
                     ref_image_paths.append(latest["file_path"])
                 else:
                     st.caption(f"{ref['label']}: not generated yet ({ref['source_agent']})")
-            except Exception:
-                st.caption(f"{ref['label']}: unavailable")
+            except Exception as e:
+                st.caption(f"{ref['label']}: unavailable — {e}")
 
     if executor_type in ("fal_image", "fal_video"):
         uploaded_files = st.file_uploader(
