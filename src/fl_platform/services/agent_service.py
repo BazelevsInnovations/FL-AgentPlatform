@@ -11,10 +11,17 @@ from fl_platform.pipeline.runner import PipelineRunner
 
 
 async def run_agent(
-    db: AsyncSession, project: Project, agent_name: str, settings: Settings
+    db: AsyncSession,
+    project: Project,
+    agent_name: str,
+    settings: Settings,
+    model_id: str | None = None,
+    extra_params: dict | None = None,
 ) -> dict:
     runner = PipelineRunner(db, settings)
-    return await runner.run_agent(project, agent_name)
+    return await runner.run_agent(
+        project, agent_name, model_id=model_id, extra_params=extra_params,
+    )
 
 
 async def run_step(

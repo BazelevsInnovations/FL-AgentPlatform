@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+import pandas as pd
 import streamlit as st
 
 
@@ -15,7 +16,7 @@ def render_artifact(artifact: dict, api_base: str) -> None:
         if art_type == "json":
             try:
                 parsed = json.loads(content)
-                st.json(parsed)
+                _render_json_smart(parsed, name)
             except json.JSONDecodeError:
                 st.code(content)
         else:
@@ -30,7 +31,7 @@ def render_artifact(artifact: dict, api_base: str) -> None:
                 artifact_id = artifact.get("id", "")
                 project_id = artifact.get("project_id", "")
                 download_url = f"{api_base}/api/v1/projects/{project_id}/artifacts/{artifact_id}/download"
-                st.markdown(f"[Download]({download_url})")
+                st.markdown(f"[Download image]({download_url})")
 
     elif art_type == "video":
         file_path = artifact.get("file_path", "")
@@ -42,6 +43,35 @@ def render_artifact(artifact: dict, api_base: str) -> None:
 
     else:
         st.text(f"Unknown type: {art_type}")
+
+
+def _render_json_smart(data, name: str) -> None:
+    """Render JSON data: arrays of dicts as tables, everything else as json."""
+    if isinstance(data, list) and data and isinstance(data[0], dict):
+        st.markdown(f"**{name}**")
+        st.dataframe(pd.DataFrame(data), use_container_width=True)
+        return
+
+    if isinstance(data, dict):
+        has_tables = False
+        remainder = {}
+        for key, value in data.items():
+            if isinstance(value, list) and value and isinstance(value[0], dict):
+                has_tables = True
+                st.markdown(f"**{key}**")
+                st.dataframe(pd.DataFrame(value), use_container_width=True)
+            else:
+                remainder[key] = value
+
+        if remainder:
+            if has_tables:
+                with st.expander("Other data"):
+                    st.json(remainder)
+            else:
+                st.json(data)
+        return
+
+    st.json(data)
 
 
 def render_artifact_metadata(artifact: dict, api_base: str) -> None:
@@ -98,6 +128,4 @@ def render_artifact_metadata(artifact: dict, api_base: str) -> None:
     artifact_id = artifact.get("id", "")
     file_path = artifact.get("file_path")
     if file_path and artifact_id:
-        # We can't easily provide a direct download button in Streamlit for API files,
-        # so show the file path
         st.caption(f"File: `{file_path}`")

@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from fl_platform.agents.registry import ALL_AGENTS, list_agents
 from fl_platform.config import Settings
+from fl_platform.models_registry import get_models_for_executor
 from fl_platform.db.engine import get_db_session
 from fl_platform.dependencies import get_settings
 from fl_platform.pipeline.dag import PipelineDAG
@@ -44,6 +45,13 @@ async def get_agents():
     ]
 
 
+@router.get("/models/{executor_type}")
+async def get_models(executor_type: str):
+    """Return available models and their parameters for a given executor type."""
+    models = get_models_for_executor(executor_type)
+    return models
+
+
 @router.get("/pipeline/dag")
 async def get_pipeline_dag():
     dag = PipelineDAG(ALL_AGENTS)
@@ -62,7 +70,11 @@ async def run_agent(
     if project is None:
         raise HTTPException(404, "Project not found")
     try:
-        result = await agent_service.run_agent(db, project, agent_name, settings)
+        result = await agent_service.run_agent(
+            db, project, agent_name, settings,
+            model_id=body.model_id if body else None,
+            extra_params=body.extra_params if body else None,
+        )
         return result
     except ValueError as e:
         raise HTTPException(400, str(e))

@@ -10,6 +10,88 @@ import httpx
 
 from components.artifact_viewer import render_artifact
 
+
+def _render_param_controls(params_spec: dict, current_extra: dict, key_prefix: str) -> dict:
+    """Render UI controls for model-specific parameters."""
+    values = {}
+    for param_name, spec in params_spec.items():
+        param_type = spec["type"]
+        default = spec.get("default")
+        current_val = current_extra.get(param_name, default)
+        desc = spec.get("description", "")
+
+        if param_type == "select":
+            options = spec["options"]
+            idx = 0
+            if current_val in options:
+                idx = options.index(current_val)
+            val = st.selectbox(
+                param_name, options, index=idx,
+                key=f"{key_prefix}_{param_name}", help=desc,
+            )
+            if val != default:
+                values[param_name] = val
+
+        elif param_type == "int":
+            if default is None:
+                use = st.checkbox(
+                    f"Set {param_name}",
+                    value=current_val is not None,
+                    key=f"{key_prefix}_{param_name}_use", help=desc,
+                )
+                if use:
+                    val = st.number_input(
+                        param_name,
+                        min_value=spec.get("min", 0),
+                        max_value=spec.get("max", 999999),
+                        value=current_val if current_val is not None else 0,
+                        key=f"{key_prefix}_{param_name}",
+                    )
+                    values[param_name] = int(val)
+            else:
+                val = st.number_input(
+                    param_name,
+                    min_value=spec.get("min", 0),
+                    max_value=spec.get("max", 999999),
+                    value=current_val if current_val is not None else default,
+                    key=f"{key_prefix}_{param_name}", help=desc,
+                )
+                if val != default:
+                    values[param_name] = int(val)
+
+        elif param_type == "float":
+            val = st.slider(
+                param_name,
+                min_value=float(spec.get("min", 0)),
+                max_value=float(spec.get("max", 1)),
+                value=float(current_val if current_val is not None else default),
+                step=0.05,
+                key=f"{key_prefix}_{param_name}", help=desc,
+            )
+            if val != default:
+                values[param_name] = val
+
+        elif param_type == "bool":
+            val = st.checkbox(
+                param_name,
+                value=bool(current_val if current_val is not None else default),
+                key=f"{key_prefix}_{param_name}", help=desc,
+            )
+            if val != default:
+                values[param_name] = val
+
+        elif param_type == "text":
+            val = st.text_input(
+                param_name,
+                value=str(current_val if current_val else default or ""),
+                key=f"{key_prefix}_{param_name}", help=desc,
+            )
+            if val and val != default:
+                values[param_name] = val
+
+    return values
+
+
 st.title("Agent Detail")
 
 API_BASE = st.session_state.get("api_base", "http://localhost:8000")
@@ -27,18 +109,40 @@ except Exception as e:
     st.error(f"Cannot load agents: {e}")
     st.stop()
 
-agent_names = [a["name"] for a in agents]
 agent_map = {a["name"]: a for a in agents}
 
-default_idx = 0
+# --- Group agents by department ---
+departments = sorted({a["department"] for a in agents})
+dept_agents: dict[str, list[dict]] = {d: [] for d in departments}
+for a in sorted(agents, key=lambda x: (x["step"], x["name"])):
+    dept_agents[a["department"]].append(a)
+
 preselected = st.session_state.pop("selected_agent", None)
-if preselected and preselected in agent_names:
-    default_idx = agent_names.index(preselected)
+
+# Department selector
+preselected_dept = None
+if preselected and preselected in agent_map:
+    preselected_dept = agent_map[preselected]["department"]
+
+dept_idx = 0
+if preselected_dept and preselected_dept in departments:
+    dept_idx = departments.index(preselected_dept)
+
+selected_dept = st.selectbox("Department", departments, index=dept_idx)
+
+# Agent selector within department
+dept_agent_list = dept_agents[selected_dept]
+agent_names_in_dept = [a["name"] for a in dept_agent_list]
+
+agent_idx = 0
+if preselected and preselected in agent_names_in_dept:
+    agent_idx = agent_names_in_dept.index(preselected)
 
 selected = st.selectbox(
-    "Select Agent", agent_names,
-    index=default_idx,
-    format_func=lambda n: f"{agent_map[n]['display_name']} ({n})",
+    "Agent",
+    agent_names_in_dept,
+    index=agent_idx,
+    format_func=lambda n: f"[Step {agent_map[n]['step']}] {agent_map[n]['display_name']} ({n})",
 )
 
 if selected:
@@ -56,17 +160,63 @@ if selected:
 
     st.markdown("---")
 
+    # --- Model selector for fal_image / fal_video executors ---
+    run_model_id = None
+    run_extra_params = None
+    executor_type = agent["executor_type"]
+
+    if executor_type in ("fal_image", "fal_video"):
+        try:
+            models_resp = httpx.get(
+                f"{API_BASE}/api/v1/models/{executor_type}", timeout=10,
+            )
+            models_resp.raise_for_status()
+            models_registry = models_resp.json()
+        except Exception:
+            models_registry = {}
+
+        if models_registry:
+            model_ids = list(models_registry.keys())
+            display_names = [
+                models_registry[m].get("display", m) for m in model_ids
+            ]
+
+            st.markdown("#### Model")
+            selected_model_idx = st.selectbox(
+                "Select model",
+                range(len(model_ids)),
+                format_func=lambda i: f"{display_names[i]} ({model_ids[i]})",
+                key=f"run_model_{selected}",
+                label_visibility="collapsed",
+            )
+            run_model_id = model_ids[selected_model_idx]
+
+            # Show model-specific parameters
+            model_info = models_registry.get(run_model_id, {})
+            params_spec = model_info.get("params", {})
+            if params_spec:
+                with st.expander("Model Parameters", expanded=False):
+                    run_extra_params = _render_param_controls(
+                        params_spec, {}, f"run_param_{selected}",
+                    )
+
     if st.button("Run Agent"):
+        body: dict = {}
+        if run_model_id:
+            body["model_id"] = run_model_id
+        if run_extra_params:
+            body["extra_params"] = run_extra_params
+
         with st.spinner(f"Running {agent['display_name']}..."):
             try:
                 resp = httpx.post(
                     f"{API_BASE}/api/v1/projects/{project_id}/agents/{selected}/run",
-                    json={},
+                    json=body,
                     timeout=300,
                 )
                 resp.raise_for_status()
                 st.success("Completed!")
-                st.json(resp.json())
+                st.rerun()
             except Exception as e:
                 st.error(f"Error: {e}")
 

@@ -69,7 +69,13 @@ class PipelineRunner:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def run_agent(self, project: Project, agent_name: str) -> dict:
+    async def run_agent(
+        self,
+        project: Project,
+        agent_name: str,
+        model_id: str | None = None,
+        extra_params: dict | None = None,
+    ) -> dict:
         agent_def = get_agent(agent_name)
         config = await self._get_agent_config(agent_name)
         context = ProjectContext(self.db, project)
@@ -82,8 +88,9 @@ class PipelineRunner:
                 config.system_prompt if config and not config.is_default
                 else agent_def.default_system_prompt
             )
-            model_id = config.model_id if config else None
-            extra_params = config.extra_params if config else None
+            # Request-level overrides take priority over saved config
+            model_id = model_id or (config.model_id if config else None)
+            extra_params = extra_params or (config.extra_params if config else None)
 
             executor = self._get_executor(agent_def, config)
 
