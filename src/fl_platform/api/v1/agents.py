@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import os
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,8 +20,10 @@ from fl_platform.schemas.agent import (
     AgentRunRequest,
     AgentRunResponse,
     ArtifactResponse,
+    EntitySelectorInfo,
     PipelineStepRequest,
     PromptHistoryResponse,
+    ReferenceSourceInfo,
 )
 from sqlalchemy import select
 from fl_platform.db.models import AgentRun, PromptHistory
@@ -41,6 +44,22 @@ async def get_agents():
             input_description=a.input_description,
             output_description=a.output_description,
             depends_on=a.depends_on,
+            entity_selectors=[
+                EntitySelectorInfo(
+                    key=s.key, label=s.label,
+                    source_agent=s.source_agent,
+                    source_field=s.source_field,
+                    label_field=s.label_field,
+                )
+                for s in a.entity_selectors
+            ],
+            reference_sources=[
+                ReferenceSourceInfo(
+                    key=r.key, label=r.label,
+                    source_agent=r.source_agent,
+                )
+                for r in a.reference_sources
+            ],
         )
         for a in list_agents()
     ]
@@ -210,6 +229,26 @@ async def download_artifact(
     if artifact.content_text:
         return {"content": artifact.content_text}
     raise HTTPException(404, "No content available")
+
+
+@router.post("/uploads")
+async def upload_reference_file(
+    file: UploadFile,
+    settings: Settings = Depends(get_settings),
+):
+    """Upload a reference image file. Returns the saved file path."""
+    allowed_ext = {".png", ".jpg", ".jpeg", ".webp"}
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in allowed_ext:
+        raise HTTPException(400, f"Unsupported file type: {ext}")
+    upload_dir = os.path.join(settings.artifacts_dir, "uploads")
+    os.makedirs(upload_dir, exist_ok=True)
+    file_name = f"{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(upload_dir, file_name)
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+    return {"file_path": file_path}
 
 
 @router.get(

@@ -1,4 +1,4 @@
-from fl_platform.agents.base import AgentDefinition
+from fl_platform.agents.base import AgentDefinition, EntitySelector
 
 sound_director_agent = AgentDefinition(
     name="sound.sound_director",
@@ -9,6 +9,9 @@ sound_director_agent = AgentDefinition(
     input_description="First assistant, Director Scene Vision",
     output_description="Sound Brief → to Shots (video)",
     depends_on=["director.first_assistant", "director.scene_vision"],
+    entity_selectors=[
+        EntitySelector("scene", "Scene", "director.first_assistant", "location_breakdown", "scene_id"),
+    ],
     default_system_prompt="""You are an experienced Sound Director with a deep
 understanding of how sound shapes emotion, space, and narrative.
 You have designed soundscapes for films across every genre —

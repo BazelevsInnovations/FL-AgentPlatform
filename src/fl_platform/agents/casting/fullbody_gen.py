@@ -1,4 +1,4 @@
-from fl_platform.agents.base import AgentDefinition
+from fl_platform.agents.base import AgentDefinition, EntitySelector
 
 fullbody_gen_agent = AgentDefinition(
     name="casting.fullbody_gen",
@@ -9,6 +9,9 @@ fullbody_gen_agent = AgentDefinition(
     input_description="Portrait + Wardrobe",
     output_description="Character Fullbody photo → to static shot generation",
     depends_on=["casting.portrait_gen", "casting.wardrobe_gen"],
+    entity_selectors=[
+        EntitySelector("character", "Character", "casting.character_description", "characters", "name"),
+    ],
     default_system_prompt="""You are an expert at creating prompts for AI full-body portrait generation.
 Given face, wardrobe and in-script descriptions, create an optimized prompt for a professional full-body portrait photo.
 Show a person with described features wearing the described outfit.

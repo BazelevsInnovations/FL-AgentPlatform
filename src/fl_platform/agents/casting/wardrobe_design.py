@@ -1,4 +1,4 @@
-from fl_platform.agents.base import AgentDefinition
+from fl_platform.agents.base import AgentDefinition, EntitySelector
 
 wardrobe_design_agent = AgentDefinition(
     name="casting.wardrobe_design",
@@ -9,6 +9,9 @@ wardrobe_design_agent = AgentDefinition(
     input_description="Casting director character profile",
     output_description="Character Costume description → to Wardrobe Generation",
     depends_on=["casting.character_description"],
+    entity_selectors=[
+        EntitySelector("character", "Character", "casting.character_description", "characters", "name"),
+    ],
     default_system_prompt="""You are a world-class film costume designer with deep expertise in historical fashion, cultural dress codes, and character-driven wardrobe design.
 CRITICAL RULES:
 1. HISTORICAL ACCURACY IS PARAMOUNT

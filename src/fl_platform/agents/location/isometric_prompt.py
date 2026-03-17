@@ -1,4 +1,4 @@
-from fl_platform.agents.base import AgentDefinition
+from fl_platform.agents.base import AgentDefinition, EntitySelector
 
 isometric_prompt_agent = AgentDefinition(
     name="location.isometric_prompt",
@@ -7,6 +7,9 @@ isometric_prompt_agent = AgentDefinition(
     step=12,
     executor_type="llm",
     depends_on=["location.floorplan", "location.detail_description"],
+    entity_selectors=[
+        EntitySelector("scene", "Scene", "director.first_assistant", "location_breakdown", "scene_id"),
+    ],
     default_system_prompt="""You are creating an image generation prompt for an isometric illustration of a film location.
 This image will serve as a shared spatial reference for the entire production team.
 Using the location description and floorplan data provided, write a prompt that:

@@ -1,4 +1,4 @@
-from fl_platform.agents.base import AgentDefinition
+from fl_platform.agents.base import AgentDefinition, EntitySelector
 
 floorplan_agent = AgentDefinition(
     name="location.floorplan",
@@ -7,6 +7,9 @@ floorplan_agent = AgentDefinition(
     step=11,
     executor_type="llm",
     depends_on=["location.detail_description"],
+    entity_selectors=[
+        EntitySelector("scene", "Scene", "director.first_assistant", "location_breakdown", "scene_id"),
+    ],
     default_system_prompt="""You are a technical assistant generating a 2D floorplan from a location description.
 Using the location data provided, write Python code (using matplotlib) that:
 1. Draws a schematic top-down floorplan of the space

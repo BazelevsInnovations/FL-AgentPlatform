@@ -1,4 +1,4 @@
-from fl_platform.agents.base import AgentDefinition
+from fl_platform.agents.base import AgentDefinition, EntitySelector
 
 scene_vision_agent = AgentDefinition(
     name="director.scene_vision",
@@ -9,6 +9,9 @@ scene_vision_agent = AgentDefinition(
     input_description="Script, First assistant breakdown, Director film vision",
     output_description="Scene Vision JSON → to DP, PD, Storyboard, Location scout, Sound Director",
     depends_on=["director.first_assistant", "director.film_vision"],
+    entity_selectors=[
+        EntitySelector("scene", "Scene", "director.first_assistant", "location_breakdown", "scene_id"),
+    ],
     default_system_prompt="""You are an experienced film director with a deep understanding
 of visual storytelling, narrative structure, and human emotion.
 You have worked across genres — from intimate character dramas

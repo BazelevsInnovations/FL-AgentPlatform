@@ -1,4 +1,4 @@
-from fl_platform.agents.base import AgentDefinition
+from fl_platform.agents.base import AgentDefinition, EntitySelector
 
 character_description_agent = AgentDefinition(
     name="casting.character_description",
@@ -9,6 +9,9 @@ character_description_agent = AgentDefinition(
     input_description="First assistant director character breakdown + Director Film Vision",
     output_description="Character Profiles → to Portrait Generation, Wardrobe Design, full-body shot",
     depends_on=["director.first_assistant", "director.film_vision"],
+    entity_selectors=[
+        EntitySelector("character", "Character", "director.first_assistant", "character_breakdown", "name"),
+    ],
     default_system_prompt="""You are an experienced casting director and character analyst for film production.
 
 ## INPUT

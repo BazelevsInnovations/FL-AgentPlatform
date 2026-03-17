@@ -1,4 +1,4 @@
-from fl_platform.agents.base import AgentDefinition
+from fl_platform.agents.base import AgentDefinition, EntitySelector, ReferenceSource
 
 fullbody_image_agent = AgentDefinition(
     name="casting.fullbody_image",
@@ -9,5 +9,12 @@ fullbody_image_agent = AgentDefinition(
     input_description="Fullbody prompt + portrait image ref + wardrobe image ref",
     output_description="Character full-body photo (generated image with face and wardrobe references)",
     depends_on=["casting.fullbody_gen", "casting.portrait_image", "casting.wardrobe_image"],
+    entity_selectors=[
+        EntitySelector("character", "Character", "casting.character_description", "characters", "name"),
+    ],
+    reference_sources=[
+        ReferenceSource("face_ref", "Face Portrait", "casting.portrait_image"),
+        ReferenceSource("wardrobe_ref", "Wardrobe", "casting.wardrobe_image"),
+    ],
     default_system_prompt="Generate a professional full-body character photo combining the face reference and wardrobe reference.",
 )

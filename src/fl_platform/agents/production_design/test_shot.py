@@ -1,4 +1,4 @@
-from fl_platform.agents.base import AgentDefinition
+from fl_platform.agents.base import AgentDefinition, EntitySelector
 
 pd_test_shot_agent = AgentDefinition(
     name="production_design.test_shot",
@@ -9,6 +9,9 @@ pd_test_shot_agent = AgentDefinition(
     input_description="Director Film Vision JSON, Director Scene Vision JSON",
     output_description="Test Shot Prompt",
     depends_on=["director.film_vision", "director.scene_vision"],
+    entity_selectors=[
+        EntitySelector("shot", "Shot", "director.breakdown_table", "breakdown", "shot"),
+    ],
     default_system_prompt="""You are an expert cinematographer creating test shot prompts. Create a prompt for generating a REALISTIC test shot image showing the scene environment.
 The image should depict:
 - The actual location/environment described in the scene

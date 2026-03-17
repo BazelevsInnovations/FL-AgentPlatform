@@ -200,23 +200,24 @@ if selected:
                         params_spec, {}, f"run_param_{selected}",
                     )
 
-    # --- Input parameters: entity selection from dependency outputs ---
-    run_input_params = {}
-    depends_on = agent.get("depends_on", [])
-    if depends_on:
-        for dep_name in depends_on:
+    # --- Entity selectors (declarative) ---
+    run_input_params: dict = {}
+    selectors = agent.get("entity_selectors", [])
+    if selectors:
+        st.markdown("#### Parameters")
+        for sel in selectors:
             try:
-                dep_resp = httpx.get(
-                    f"{API_BASE}/api/v1/projects/{project_id}/agents/{dep_name}/latest-output",
+                src_resp = httpx.get(
+                    f"{API_BASE}/api/v1/projects/{project_id}/agents/{sel['source_agent']}/latest-output",
                     timeout=10,
                 )
-                dep_resp.raise_for_status()
-                dep_output = dep_resp.json()
-                if not dep_output:
+                src_resp.raise_for_status()
+                src_output = src_resp.json()
+                if not src_output:
+                    st.caption(f"{sel['label']}: waiting for {sel['source_agent']}")
                     continue
 
-                # Look for parsed content with selectable lists
-                parsed = dep_output.get("parsed") or dep_output.get("content")
+                parsed = src_output.get("parsed") or src_output.get("content")
                 if isinstance(parsed, str):
                     try:
                         parsed = json.loads(parsed)
@@ -226,35 +227,75 @@ if selected:
                 if not isinstance(parsed, dict):
                     continue
 
-                # Find lists of entities (character_breakdown, location_breakdown, etc.)
-                for list_key, items in parsed.items():
-                    if not isinstance(items, list) or not items or not isinstance(items[0], dict):
-                        continue
+                items = parsed.get(sel["source_field"])
+                if not isinstance(items, list) or not items:
+                    continue
 
-                    # Determine label field
-                    label_field = None
-                    for candidate in ("name", "location_name", "scene_id", "shot"):
-                        if candidate in items[0]:
-                            label_field = candidate
-                            break
-                    if not label_field:
-                        continue
+                labels = [str(item.get(sel["label_field"], f"#{i}")) for i, item in enumerate(items)]
+                labels.insert(0, f"All ({len(items)})")
 
-                    labels = [str(item.get(label_field, f"#{i}")) for i, item in enumerate(items)]
-                    labels.insert(0, f"All ({len(items)})")
-
-                    label = list_key.replace("_", " ").title()
-                    chosen = st.selectbox(
-                        f"Select {label}",
-                        range(len(labels)),
-                        format_func=lambda i, _l=labels: _l[i],
-                        key=f"input_sel_{selected}_{dep_name}_{list_key}",
-                    )
-                    if chosen > 0:
-                        run_input_params[list_key] = items[chosen - 1]
+                chosen = st.selectbox(
+                    sel["label"],
+                    range(len(labels)),
+                    format_func=lambda i, _l=labels: _l[i],
+                    key=f"sel_{selected}_{sel['key']}",
+                )
+                if chosen > 0:
+                    run_input_params[sel["key"]] = items[chosen - 1]
 
             except Exception:
                 pass
+
+    # --- Reference images (auto-resolved + manual upload) ---
+    ref_sources = agent.get("reference_sources", [])
+    ref_image_paths: list[str] = []
+
+    if ref_sources:
+        st.markdown("#### Reference Images")
+        for ref in ref_sources:
+            try:
+                arts_resp = httpx.get(
+                    f"{API_BASE}/api/v1/projects/{project_id}/artifacts",
+                    params={"agent_name": ref["source_agent"]},
+                    timeout=10,
+                )
+                arts_resp.raise_for_status()
+                arts = arts_resp.json()
+                img_arts = [
+                    a for a in arts
+                    if a.get("file_path") and a["file_path"].lower().rsplit(".", 1)[-1] in ("png", "jpg", "jpeg", "webp")
+                ]
+                if img_arts:
+                    latest = img_arts[-1]
+                    st.caption(f"{ref['label']}: {latest['name']}")
+                    ref_image_paths.append(latest["file_path"])
+                else:
+                    st.caption(f"{ref['label']}: not generated yet ({ref['source_agent']})")
+            except Exception:
+                st.caption(f"{ref['label']}: unavailable")
+
+    if executor_type in ("fal_image", "fal_video"):
+        uploaded_files = st.file_uploader(
+            "Upload reference images",
+            accept_multiple_files=True,
+            type=["png", "jpg", "jpeg", "webp"],
+            key=f"ref_upload_{selected}",
+        )
+        if uploaded_files:
+            for uf in uploaded_files:
+                try:
+                    resp = httpx.post(
+                        f"{API_BASE}/api/v1/uploads",
+                        files={"file": (uf.name, uf.read(), uf.type)},
+                        timeout=30,
+                    )
+                    resp.raise_for_status()
+                    ref_image_paths.append(resp.json()["file_path"])
+                except Exception:
+                    st.warning(f"Failed to upload {uf.name}")
+
+    if ref_image_paths:
+        run_input_params["reference_images"] = ref_image_paths
 
     if st.button("Run Agent"):
         body: dict = {}

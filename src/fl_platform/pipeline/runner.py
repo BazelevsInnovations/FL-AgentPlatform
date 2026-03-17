@@ -95,7 +95,26 @@ class PipelineRunner:
 
             # Inject user-provided input params (e.g. selected character/scene)
             if input_params:
-                inputs["user_selection"] = input_params
+                # Extract reference_images to top-level [file:...] entries
+                ref_images = input_params.pop("reference_images", None)
+                if ref_images:
+                    for idx, path in enumerate(ref_images):
+                        inputs[f"_ref_image_{idx}"] = f"[file:{path}]"
+                if input_params:
+                    inputs["user_selection"] = input_params
+
+            # Auto-resolve reference images from agent definition
+            if agent_def.reference_sources:
+                for ref_src in agent_def.reference_sources:
+                    ref_artifacts = await context.get_artifacts(ref_src.source_agent)
+                    for art in ref_artifacts:
+                        if art.file_path and art.file_path.lower().rsplit(".", 1)[-1] in (
+                            "png", "jpg", "jpeg", "webp",
+                        ):
+                            ref_key = f"_auto_ref_{ref_src.key}"
+                            if ref_key not in inputs:
+                                inputs[ref_key] = f"[file:{art.file_path}]"
+                            break
 
             executor = self._get_executor(agent_def, config)
 

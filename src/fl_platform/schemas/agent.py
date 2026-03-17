@@ -6,6 +6,20 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
+class EntitySelectorInfo(BaseModel):
+    key: str
+    label: str
+    source_agent: str
+    source_field: str
+    label_field: str
+
+
+class ReferenceSourceInfo(BaseModel):
+    key: str
+    label: str
+    source_agent: str
+
+
 class AgentInfo(BaseModel):
     name: str
     display_name: str
@@ -15,6 +29,8 @@ class AgentInfo(BaseModel):
     input_description: str
     output_description: str
     depends_on: list[str]
+    entity_selectors: list[EntitySelectorInfo] = []
+    reference_sources: list[ReferenceSourceInfo] = []
 
 
 class AgentRunRequest(BaseModel):

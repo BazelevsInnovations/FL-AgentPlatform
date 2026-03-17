@@ -1,4 +1,4 @@
-from fl_platform.agents.base import AgentDefinition
+from fl_platform.agents.base import AgentDefinition, EntitySelector
 
 isometric_image_agent = AgentDefinition(
     name="location.isometric_image",
@@ -7,6 +7,9 @@ isometric_image_agent = AgentDefinition(
     step=12,
     executor_type="fal_image",
     depends_on=["location.isometric_prompt", "location.floorplan"],
+    entity_selectors=[
+        EntitySelector("scene", "Scene", "director.first_assistant", "location_breakdown", "scene_id"),
+    ],
     default_system_prompt="""You are creating an image of an isometric illustration of a film location.
 This image will serve as a shared spatial reference for the entire production team.
 Image should NOT be in style of the floor plan.

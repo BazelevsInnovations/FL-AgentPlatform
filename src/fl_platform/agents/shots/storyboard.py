@@ -1,4 +1,4 @@
-from fl_platform.agents.base import AgentDefinition
+from fl_platform.agents.base import AgentDefinition, EntitySelector
 
 storyboard_agent = AgentDefinition(
     name="shots.storyboard",
@@ -7,5 +7,8 @@ storyboard_agent = AgentDefinition(
     step=15,
     executor_type="fal_image",
     depends_on=["director.scene_vision", "cinematography.dp"],
+    entity_selectors=[
+        EntitySelector("shot", "Shot", "director.breakdown_table", "breakdown", "shot"),
+    ],
     default_system_prompt="Generate a storyboard frame based on Director Scene Vision and DP Vision. Black and white sketch style, clear composition showing camera angle, character positions, and key action.",
 )

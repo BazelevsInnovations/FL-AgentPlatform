@@ -1,4 +1,4 @@
-from fl_platform.agents.base import AgentDefinition
+from fl_platform.agents.base import AgentDefinition, EntitySelector
 
 portrait_gen_agent = AgentDefinition(
     name="casting.portrait_gen",
@@ -9,6 +9,9 @@ portrait_gen_agent = AgentDefinition(
     input_description="face prompt",
     output_description="Character Portrait photo → to Fullbody Generation",
     depends_on=["casting.character_description"],
+    entity_selectors=[
+        EntitySelector("character", "Character", "casting.character_description", "characters", "name"),
+    ],
     default_system_prompt="""You are an expert at creating prompts for AI portrait image generation.
 Given a character description, create an optimized prompt for generating a professional cinematic portrait photo. Account for fitting bodytype, weight category, level of conventional attractiveness according to the script.
 Focus on: facial features, expression, lighting, and atmosphere. Include the description of the character's vibe, distinctive facial features and overall face geometry.

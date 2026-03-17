@@ -1,4 +1,4 @@
-from fl_platform.agents.base import AgentDefinition
+from fl_platform.agents.base import AgentDefinition, EntitySelector
 
 setup_scene_desc_agent = AgentDefinition(
     name="location.setup_scene_desc",
@@ -7,6 +7,10 @@ setup_scene_desc_agent = AgentDefinition(
     step=14,
     executor_type="llm",
     depends_on=["location.setup_extraction", "location.isometric_image"],
+    entity_selectors=[
+        EntitySelector("scene", "Scene", "director.first_assistant", "location_breakdown", "scene_id"),
+        EntitySelector("setup", "Setup", "location.floorplan", "setups", "name"),
+    ],
     default_system_prompt="""You are creating scene descriptions for AI image generation of film frames.
 You should use isometric Floorplan of a location as a guide for generation.
 Your goal: describe what a person physically SEES standing at this specific spot, as if writing a paragraph for a novel. This will be used to generate a cinematic still.
