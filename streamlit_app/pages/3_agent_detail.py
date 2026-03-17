@@ -206,6 +206,8 @@ if selected:
     if selectors:
         st.markdown("#### Parameters")
         for sel in selectors:
+            items: list | None = None
+            fallback_reason = ""
             try:
                 src_resp = httpx.get(
                     f"{API_BASE}/api/v1/projects/{project_id}/agents/{sel['source_agent']}/latest-output",
@@ -213,31 +215,30 @@ if selected:
                 )
                 src_resp.raise_for_status()
                 src_output = src_resp.json()
-                if not src_output:
-                    st.caption(f"{sel['label']}: waiting for {sel['source_agent']}")
-                    continue
+                if src_output:
+                    parsed = src_output.get("parsed") or src_output.get("content")
+                    if isinstance(parsed, str):
+                        try:
+                            parsed = json.loads(parsed)
+                        except (json.JSONDecodeError, TypeError):
+                            parsed = None
+                    if isinstance(parsed, dict):
+                        raw_items = parsed.get(sel["source_field"])
+                        if isinstance(raw_items, list) and raw_items:
+                            items = raw_items
+                        else:
+                            fallback_reason = f"field '{sel['source_field']}' not found in output"
+                    else:
+                        fallback_reason = "output is not structured JSON"
+                else:
+                    fallback_reason = f"run {sel['source_agent']} first"
+            except Exception as e:
+                fallback_reason = str(e)
 
-                parsed = src_output.get("parsed") or src_output.get("content")
-                if isinstance(parsed, str):
-                    try:
-                        parsed = json.loads(parsed)
-                    except (json.JSONDecodeError, TypeError):
-                        st.caption(f"⚠ {sel['label']}: could not parse output from {sel['source_agent']} as JSON")
-                        continue
-
-                if not isinstance(parsed, dict):
-                    st.caption(f"⚠ {sel['label']}: output from {sel['source_agent']} is not structured data (type={type(parsed).__name__})")
-                    continue
-
-                items = parsed.get(sel["source_field"])
-                if not isinstance(items, list) or not items:
-                    available_keys = ", ".join(parsed.keys()) if isinstance(parsed, dict) else "N/A"
-                    st.caption(f"⚠ {sel['label']}: field '{sel['source_field']}' not found or empty in {sel['source_agent']} output (available: {available_keys})")
-                    continue
-
+            if items:
+                # Dropdown from available data
                 labels = [str(item.get(sel["label_field"], f"#{i}")) for i, item in enumerate(items)]
                 labels.insert(0, f"All ({len(items)})")
-
                 chosen = st.selectbox(
                     sel["label"],
                     range(len(labels)),
@@ -246,9 +247,17 @@ if selected:
                 )
                 if chosen > 0:
                     run_input_params[sel["key"]] = items[chosen - 1]
-
-            except Exception as e:
-                st.caption(f"{sel['label']}: error loading — {e}")
+            else:
+                # Manual text input fallback
+                if fallback_reason:
+                    st.caption(f"{sel['label']}: {fallback_reason}")
+                manual_val = st.text_input(
+                    sel["label"],
+                    key=f"sel_manual_{selected}_{sel['key']}",
+                    placeholder=f"Enter {sel['label'].lower()} manually",
+                )
+                if manual_val:
+                    run_input_params[sel["key"]] = {sel["label_field"]: manual_val}
 
     # --- Reference images (auto-resolved + manual upload) ---
     ref_sources = agent.get("reference_sources", [])
