@@ -6,9 +6,9 @@ scene_vision_agent = AgentDefinition(
     department="Director",
     step=4,
     executor_type="llm",
-    input_description="Script, Director film vision",
+    input_description="Script, First assistant breakdown, Director film vision",
     output_description="Scene Vision JSON → to DP, PD, Storyboard, Location scout, Sound Director",
-    depends_on=["director.film_vision"],
+    depends_on=["director.first_assistant", "director.film_vision"],
     default_system_prompt="""You are an experienced film director with a deep understanding
 of visual storytelling, narrative structure, and human emotion.
 You have worked across genres — from intimate character dramas

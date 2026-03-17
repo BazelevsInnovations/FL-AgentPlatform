@@ -243,8 +243,9 @@ if selected:
                     labels = [str(item.get(label_field, f"#{i}")) for i, item in enumerate(items)]
                     labels.insert(0, f"All ({len(items)})")
 
+                    label = list_key.replace("_", " ").title()
                     chosen = st.selectbox(
-                        f"Select from {list_key}",
+                        f"Select {label}",
                         range(len(labels)),
                         format_func=lambda i, _l=labels: _l[i],
                         key=f"input_sel_{selected}_{dep_name}_{list_key}",
