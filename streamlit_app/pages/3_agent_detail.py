@@ -1,9 +1,14 @@
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import json
 
 import streamlit as st
 import httpx
 
-from streamlit_app.components.artifact_viewer import render_artifact
+from components.artifact_viewer import render_artifact
 
 st.title("Agent Detail")
 
