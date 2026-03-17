@@ -116,3 +116,23 @@ class Artifact(Base):
 
     project: Mapped["Project"] = relationship(back_populates="artifacts")
     agent_run: Mapped["AgentRun"] = relationship(back_populates="artifacts")
+
+
+class PromptHistory(Base):
+    __tablename__ = "prompt_history"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"), index=True
+    )
+    agent_run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("agent_runs.id", ondelete="CASCADE"), index=True
+    )
+    agent_name: Mapped[str] = mapped_column(String(100), index=True)
+    system_prompt: Mapped[str] = mapped_column(Text, default="")
+    user_prompt: Mapped[str] = mapped_column(Text, default="")
+    model_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    extra_params: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )

@@ -17,12 +17,12 @@ class Settings(BaseSettings):
     default_llm_provider: str = "stub"  # "stub" | "claude" | "openai"
     anthropic_api_key: str = ""
     openai_api_key: str = ""
-    default_llm_model: str = "claude-sonnet-4-20250514"
+    default_llm_model: str = "claude-sonnet-4-6-20250620"
 
     # FAL.AI
     fal_api_key: str = ""
-    default_fal_image_model: str = "fal-ai/flux/dev"
-    default_fal_video_model: str = "fal-ai/minimax/video-01-live"
+    default_fal_image_model: str = "fal-ai/nano-banana-2"
+    default_fal_video_model: str = "fal-ai/veo3"
 
     # Artifacts
     artifacts_dir: str = "./artifacts"

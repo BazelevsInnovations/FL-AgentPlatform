@@ -17,7 +17,9 @@ from fl_platform.schemas.agent import (
     AgentRunResponse,
     ArtifactResponse,
     PipelineStepRequest,
+    PromptHistoryResponse,
 )
+from fl_platform.db.models import PromptHistory
 from fl_platform.services import agent_service, project_service
 
 router = APIRouter(tags=["agents"])
@@ -125,3 +127,27 @@ async def download_artifact(
     if artifact.content_text:
         return {"content": artifact.content_text}
     raise HTTPException(404, "No content available")
+
+
+@router.get(
+    "/projects/{project_id}/agents/{agent_name}/prompt-history",
+    response_model=list[PromptHistoryResponse],
+)
+async def get_prompt_history(
+    project_id: uuid.UUID,
+    agent_name: str,
+    db: AsyncSession = Depends(get_db_session),
+):
+    from sqlalchemy import select
+
+    stmt = (
+        select(PromptHistory)
+        .where(
+            PromptHistory.project_id == project_id,
+            PromptHistory.agent_name == agent_name,
+        )
+        .order_by(PromptHistory.created_at.desc())
+        .limit(20)
+    )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())

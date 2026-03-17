@@ -109,3 +109,29 @@ if selected:
                 render_artifact(art, API_BASE)
     except Exception as e:
         st.error(f"Cannot load artifacts: {e}")
+
+    st.markdown("### Prompt History")
+    try:
+        ph_resp = httpx.get(
+            f"{API_BASE}/api/v1/projects/{project_id}/agents/{selected}/prompt-history",
+            timeout=10,
+        )
+        ph_resp.raise_for_status()
+        history = ph_resp.json()
+
+        if not history:
+            st.info("No prompt history yet.")
+        else:
+            for entry in history:
+                ts = entry.get("created_at", "")[:19]
+                model = entry.get("model_id") or "default"
+                with st.expander(f"{ts} — model: {model}"):
+                    st.markdown("**System Prompt:**")
+                    st.code(entry.get("system_prompt", ""), language=None)
+                    st.markdown("**User Prompt (assembled from inputs):**")
+                    st.code(entry.get("user_prompt", ""), language=None)
+                    if entry.get("extra_params"):
+                        st.markdown("**Extra Params:**")
+                        st.json(entry["extra_params"])
+    except Exception as e:
+        st.error(f"Cannot load prompt history: {e}")

@@ -3,12 +3,13 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from fl_platform.agents.base import AgentDefinition
 from fl_platform.agents.registry import ALL_AGENTS, get_agent
-from fl_platform.db.models import AgentConfig, Project
+from fl_platform.db.models import AgentConfig, Project, PromptHistory
 from fl_platform.executors.base import BaseExecutor, ExecutorResult
 from fl_platform.executors.fal_image import FalImageExecutor
 from fl_platform.executors.fal_video import FalVideoExecutor
@@ -87,6 +88,20 @@ class PipelineRunner:
             executor = self._get_executor(agent_def, config)
 
             prompt_text = self._build_prompt(inputs)
+
+            # Save prompt history
+            history = PromptHistory(
+                id=uuid.uuid4(),
+                project_id=project.id,
+                agent_run_id=run.id,
+                agent_name=agent_name,
+                system_prompt=system_prompt or "",
+                user_prompt=prompt_text,
+                model_id=model_id,
+                extra_params=extra_params or {},
+            )
+            self.db.add(history)
+            await self.db.flush()
 
             result: ExecutorResult = await executor.execute(
                 prompt=prompt_text,

@@ -61,6 +61,18 @@ class PromptUpdate(BaseModel):
     extra_params: dict | None = None
 
 
+class PromptHistoryResponse(BaseModel):
+    id: uuid.UUID
+    agent_name: str
+    system_prompt: str
+    user_prompt: str
+    model_id: str | None
+    extra_params: dict
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class PipelineStepRequest(BaseModel):
     step: int
 
