@@ -9,10 +9,10 @@ RUN apt-get update \
 
 # Install Python dependencies
 COPY pyproject.toml .
+COPY src/ src/
 RUN pip install --no-cache-dir .
 
 # Copy application code
-COPY src/ src/
 COPY streamlit_app/ streamlit_app/
 COPY alembic/ alembic/
 COPY alembic.ini .
