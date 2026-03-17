@@ -80,6 +80,8 @@ async def run_agent(
         return result
     except ValueError as e:
         raise HTTPException(400, str(e))
+    except Exception as e:
+        raise HTTPException(500, f"Agent execution failed: {e}")
 
 
 @router.get("/projects/{project_id}/agents/{agent_name}/latest-output")

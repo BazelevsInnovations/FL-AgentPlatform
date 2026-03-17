@@ -274,6 +274,13 @@ if selected:
                 resp.raise_for_status()
                 st.success("Completed!")
                 st.rerun()
+            except httpx.HTTPStatusError as e:
+                detail = ""
+                try:
+                    detail = e.response.json().get("detail", "")
+                except Exception:
+                    detail = e.response.text
+                st.error(f"Error: {detail or e}")
             except Exception as e:
                 st.error(f"Error: {e}")
 
