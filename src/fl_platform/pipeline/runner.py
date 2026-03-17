@@ -75,6 +75,7 @@ class PipelineRunner:
         agent_name: str,
         model_id: str | None = None,
         extra_params: dict | None = None,
+        input_params: dict | None = None,
     ) -> dict:
         agent_def = get_agent(agent_name)
         config = await self._get_agent_config(agent_name)
@@ -91,6 +92,10 @@ class PipelineRunner:
             # Request-level overrides take priority over saved config
             model_id = model_id or (config.model_id if config else None)
             extra_params = extra_params or (config.extra_params if config else None)
+
+            # Inject user-provided input params (e.g. selected character/scene)
+            if input_params:
+                inputs["user_selection"] = input_params
 
             executor = self._get_executor(agent_def, config)
 

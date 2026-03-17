@@ -17,10 +17,14 @@ async def run_agent(
     settings: Settings,
     model_id: str | None = None,
     extra_params: dict | None = None,
+    input_params: dict | None = None,
 ) -> dict:
     runner = PipelineRunner(db, settings)
     return await runner.run_agent(
-        project, agent_name, model_id=model_id, extra_params=extra_params,
+        project, agent_name,
+        model_id=model_id,
+        extra_params=extra_params,
+        input_params=input_params,
     )
 
 

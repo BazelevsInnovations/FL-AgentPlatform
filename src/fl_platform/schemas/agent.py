@@ -20,6 +20,7 @@ class AgentInfo(BaseModel):
 class AgentRunRequest(BaseModel):
     model_id: str | None = None
     extra_params: dict | None = None
+    input_params: dict | None = None
 
 
 class AgentRunResponse(BaseModel):

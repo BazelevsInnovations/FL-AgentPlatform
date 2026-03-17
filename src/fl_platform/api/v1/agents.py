@@ -22,7 +22,8 @@ from fl_platform.schemas.agent import (
     PipelineStepRequest,
     PromptHistoryResponse,
 )
-from fl_platform.db.models import PromptHistory
+from sqlalchemy import select
+from fl_platform.db.models import AgentRun, PromptHistory
 from fl_platform.services import agent_service, project_service
 
 router = APIRouter(tags=["agents"])
@@ -74,10 +75,37 @@ async def run_agent(
             db, project, agent_name, settings,
             model_id=body.model_id if body else None,
             extra_params=body.extra_params if body else None,
+            input_params=body.input_params if body else None,
         )
         return result
     except ValueError as e:
         raise HTTPException(400, str(e))
+
+
+@router.get("/projects/{project_id}/agents/{agent_name}/latest-output")
+async def get_latest_output(
+    project_id: uuid.UUID,
+    agent_name: str,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Return the output_data from the latest completed run of an agent."""
+    from fl_platform.db.models import RunStatus
+
+    stmt = (
+        select(AgentRun)
+        .where(
+            AgentRun.project_id == project_id,
+            AgentRun.agent_name == agent_name,
+            AgentRun.status == RunStatus.COMPLETED,
+        )
+        .order_by(AgentRun.completed_at.desc())
+        .limit(1)
+    )
+    result = await db.execute(stmt)
+    run = result.scalar_one_or_none()
+    if run is None:
+        return None
+    return run.output_data
 
 
 @router.get("/projects/{project_id}/agents/{agent_name}/runs", response_model=list[AgentRunResponse])

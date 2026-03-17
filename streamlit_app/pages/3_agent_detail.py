@@ -200,12 +200,69 @@ if selected:
                         params_spec, {}, f"run_param_{selected}",
                     )
 
+    # --- Input parameters: entity selection from dependency outputs ---
+    run_input_params = {}
+    depends_on = agent.get("depends_on", [])
+    if depends_on:
+        for dep_name in depends_on:
+            try:
+                dep_resp = httpx.get(
+                    f"{API_BASE}/api/v1/projects/{project_id}/agents/{dep_name}/latest-output",
+                    timeout=10,
+                )
+                dep_resp.raise_for_status()
+                dep_output = dep_resp.json()
+                if not dep_output:
+                    continue
+
+                # Look for parsed content with selectable lists
+                parsed = dep_output.get("parsed") or dep_output.get("content")
+                if isinstance(parsed, str):
+                    try:
+                        parsed = json.loads(parsed)
+                    except (json.JSONDecodeError, TypeError):
+                        parsed = None
+
+                if not isinstance(parsed, dict):
+                    continue
+
+                # Find lists of entities (character_breakdown, location_breakdown, etc.)
+                for list_key, items in parsed.items():
+                    if not isinstance(items, list) or not items or not isinstance(items[0], dict):
+                        continue
+
+                    # Determine label field
+                    label_field = None
+                    for candidate in ("name", "location_name", "scene_id", "shot"):
+                        if candidate in items[0]:
+                            label_field = candidate
+                            break
+                    if not label_field:
+                        continue
+
+                    labels = [str(item.get(label_field, f"#{i}")) for i, item in enumerate(items)]
+                    labels.insert(0, f"All ({len(items)})")
+
+                    chosen = st.selectbox(
+                        f"Select from {list_key}",
+                        range(len(labels)),
+                        format_func=lambda i, _l=labels: _l[i],
+                        key=f"input_sel_{selected}_{dep_name}_{list_key}",
+                    )
+                    if chosen > 0:
+                        run_input_params[list_key] = items[chosen - 1]
+
+            except Exception:
+                pass
+
     if st.button("Run Agent"):
         body: dict = {}
         if run_model_id:
             body["model_id"] = run_model_id
         if run_extra_params:
             body["extra_params"] = run_extra_params
+        if run_input_params:
+            body["input_params"] = run_input_params
 
         with st.spinner(f"Running {agent['display_name']}..."):
             try:
