@@ -22,5 +22,8 @@ st.markdown("""
 **API:** FastAPI сервер запускается отдельно: `uvicorn fl_platform.main:app --reload`
 """)
 
-API_BASE = st.sidebar.text_input("API URL", value="http://localhost:8000")
+import os
+
+_default_api = os.getenv("API_BASE_URL", "http://localhost:8000")
+API_BASE = st.sidebar.text_input("API URL", value=_default_api)
 st.session_state["api_base"] = API_BASE
