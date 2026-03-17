@@ -36,7 +36,8 @@ class Project(Base):
     name: Mapped[str] = mapped_column(String(255))
     script_text: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[ProjectStatus] = mapped_column(
-        Enum(ProjectStatus), default=ProjectStatus.DRAFT
+        Enum(ProjectStatus, values_callable=lambda e: [x.value for x in e]),
+        default=ProjectStatus.DRAFT,
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -74,7 +75,10 @@ class AgentRun(Base):
     )
     agent_name: Mapped[str] = mapped_column(String(100), index=True)
     step: Mapped[int] = mapped_column(default=0)
-    status: Mapped[RunStatus] = mapped_column(Enum(RunStatus), default=RunStatus.PENDING)
+    status: Mapped[RunStatus] = mapped_column(
+        Enum(RunStatus, values_callable=lambda e: [x.value for x in e]),
+        default=RunStatus.PENDING,
+    )
     input_data: Mapped[dict] = mapped_column(JSON, default=dict)
     output_data: Mapped[dict] = mapped_column(JSON, default=dict)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -101,7 +105,9 @@ class Artifact(Base):
         ForeignKey("agent_runs.id", ondelete="CASCADE"), index=True
     )
     name: Mapped[str] = mapped_column(String(255))
-    artifact_type: Mapped[ArtifactType] = mapped_column(Enum(ArtifactType))
+    artifact_type: Mapped[ArtifactType] = mapped_column(
+        Enum(ArtifactType, values_callable=lambda e: [x.value for x in e])
+    )
     content_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     file_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
