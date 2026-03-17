@@ -3,10 +3,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import json
+
 import streamlit as st
 import httpx
 
 from components.dag_graph import render_dag
+from components.artifact_viewer import render_artifact
 
 st.title("Pipeline")
 
@@ -29,12 +32,6 @@ try:
     dag_resp.raise_for_status()
     dag_data = dag_resp.json()
 
-    runs_resp = httpx.get(
-        f"{API_BASE}/api/v1/projects/{project_id}/artifacts",
-        params={"agent_name": None},
-        timeout=10,
-    )
-
     runs = {}
     try:
         for agent_name in dag_data.get("agents", {}):
@@ -48,8 +45,9 @@ try:
     except Exception:
         pass
 
-    render_dag(dag_data, runs)
+    clicked = render_dag(dag_data, runs)
 
+    # --- Controls: Run Step / Run All ---
     st.markdown("---")
     col1, col2 = st.columns(2)
     with col1:
@@ -75,6 +73,66 @@ try:
                 resp.raise_for_status()
                 st.success("Pipeline completed")
                 st.json(resp.json())
+
+    # --- Agent Preview Panel (on node click) ---
+    if clicked and clicked in dag_data.get("agents", {}):
+        agent_info = dag_data["agents"][clicked]
+        st.markdown("---")
+        st.subheader(f"{agent_info['display_name']}")
+        st.caption(f"`{clicked}` | {agent_info['department']} | Step {agent_info['step']} | Executor: {agent_info['executor_type']}")
+
+        if agent_info.get("depends_on"):
+            st.markdown(f"**Depends on:** {', '.join(agent_info['depends_on'])}")
+
+        pcol1, pcol2 = st.columns([1, 2])
+
+        with pcol1:
+            if st.button("Run This Agent", key="run_clicked_agent"):
+                with st.spinner(f"Running {agent_info['display_name']}..."):
+                    try:
+                        resp = httpx.post(
+                            f"{API_BASE}/api/v1/projects/{project_id}/agents/{clicked}/run",
+                            json={},
+                            timeout=300,
+                        )
+                        resp.raise_for_status()
+                        st.success("Completed!")
+                        st.json(resp.json())
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+
+            if st.button("Open in Agent Detail", key="goto_agent_detail"):
+                st.session_state["selected_agent"] = clicked
+                st.switch_page("pages/3_agent_detail.py")
+
+        with pcol2:
+            # Show latest run result
+            if clicked in runs:
+                run = runs[clicked]
+                st.markdown(f"**Last run:** {run['status']}")
+                if run.get("error"):
+                    st.error(run["error"])
+                if run.get("output_data"):
+                    with st.expander("Output", expanded=True):
+                        st.json(run["output_data"])
+            else:
+                st.info("No runs yet — click 'Run This Agent' to execute.")
+
+            # Show artifacts
+            try:
+                arts_resp = httpx.get(
+                    f"{API_BASE}/api/v1/projects/{project_id}/artifacts",
+                    params={"agent_name": clicked},
+                    timeout=10,
+                )
+                arts_resp.raise_for_status()
+                artifacts = arts_resp.json()
+                if artifacts:
+                    st.markdown("**Artifacts:**")
+                    for art in artifacts:
+                        render_artifact(art, API_BASE)
+            except Exception:
+                pass
 
 except httpx.ConnectError:
     st.warning("Cannot connect to API server.")

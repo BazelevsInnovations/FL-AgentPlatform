@@ -30,7 +30,16 @@ except Exception as e:
 agent_names = [a["name"] for a in agents]
 agent_map = {a["name"]: a for a in agents}
 
-selected = st.selectbox("Select Agent", agent_names, format_func=lambda n: f"{agent_map[n]['display_name']} ({n})")
+default_idx = 0
+preselected = st.session_state.pop("selected_agent", None)
+if preselected and preselected in agent_names:
+    default_idx = agent_names.index(preselected)
+
+selected = st.selectbox(
+    "Select Agent", agent_names,
+    index=default_idx,
+    format_func=lambda n: f"{agent_map[n]['display_name']} ({n})",
+)
 
 if selected:
     agent = agent_map[selected]

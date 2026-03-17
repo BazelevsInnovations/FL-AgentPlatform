@@ -28,10 +28,10 @@ STATUS_COLORS = {
 }
 
 
-def render_dag(dag_data: dict, runs: dict | None = None) -> None:
+def render_dag(dag_data: dict, runs: dict | None = None) -> str | None:
+    """Render DAG and return clicked node ID (agent name) or None."""
     if not HAS_AGRAPH:
-        _render_text_dag(dag_data, runs)
-        return
+        return _render_text_dag(dag_data, runs)
 
     nodes = []
     edges = []
@@ -45,13 +45,17 @@ def render_dag(dag_data: dict, runs: dict | None = None) -> None:
             status = runs[name].get("status", "pending")
             color = STATUS_COLORS.get(status, color)
 
+        label = info["display_name"]
+
         nodes.append(
             Node(
                 id=name,
-                label=f"[{info['step']}] {info['display_name']}",
-                size=20,
+                label=label,
+                size=30,
                 color=color,
-                title=f"{dept} | Step {info['step']}",
+                title=f"{dept} | Step {info['step']}\nClick to run/view",
+                font={"size": 14, "color": "#222222"},
+                shape="dot",
             )
         )
 
@@ -59,20 +63,28 @@ def render_dag(dag_data: dict, runs: dict | None = None) -> None:
             edges.append(Edge(source=dep, target=name))
 
     config = Config(
-        width=1200,
-        height=800,
+        width=1400,
+        height=1000,
         directed=True,
         hierarchical=True,
         physics=False,
         nodeHighlightBehavior=True,
+        highlightColor="#F5A623",
+        collapsible=False,
+        node={"highlightStrokeColor": "#F5A623"},
+        levelSeparation=120,
+        nodeSpacing=200,
+        treeSpacing=250,
     )
 
-    agraph(nodes=nodes, edges=edges, config=config)
+    clicked = agraph(nodes=nodes, edges=edges, config=config)
+    return clicked
 
 
-def _render_text_dag(dag_data: dict, runs: dict | None = None) -> None:
+def _render_text_dag(dag_data: dict, runs: dict | None = None) -> str | None:
     agents = dag_data.get("agents", {})
     steps = dag_data.get("steps", [])
+    clicked = None
 
     for step in steps:
         step_agents = {n: a for n, a in agents.items() if a["step"] == step}
@@ -81,13 +93,12 @@ def _render_text_dag(dag_data: dict, runs: dict | None = None) -> None:
 
         st.markdown(f"### Step {step}")
         for name, info in step_agents.items():
-            status = "⬜"
+            status_icon = "⬜"
             if runs and name in runs:
                 s = runs[name].get("status", "pending")
-                status = {"completed": "✅", "running": "🔄", "failed": "❌", "pending": "⬜"}.get(s, "⬜")
+                status_icon = {"completed": "✅", "running": "🔄", "failed": "❌", "pending": "⬜"}.get(s, "⬜")
 
-            deps = ", ".join(info.get("depends_on", [])) or "—"
-            st.markdown(
-                f"{status} **{info['display_name']}** (`{name}`) "
-                f"| {info['department']} | deps: {deps}"
-            )
+            if st.button(f"{status_icon} {info['display_name']}", key=f"btn_{name}"):
+                clicked = name
+
+    return clicked
