@@ -222,13 +222,17 @@ if selected:
                     try:
                         parsed = json.loads(parsed)
                     except (json.JSONDecodeError, TypeError):
-                        parsed = None
+                        st.caption(f"⚠ {sel['label']}: could not parse output from {sel['source_agent']} as JSON")
+                        continue
 
                 if not isinstance(parsed, dict):
+                    st.caption(f"⚠ {sel['label']}: output from {sel['source_agent']} is not structured data (type={type(parsed).__name__})")
                     continue
 
                 items = parsed.get(sel["source_field"])
                 if not isinstance(items, list) or not items:
+                    available_keys = ", ".join(parsed.keys()) if isinstance(parsed, dict) else "N/A"
+                    st.caption(f"⚠ {sel['label']}: field '{sel['source_field']}' not found or empty in {sel['source_agent']} output (available: {available_keys})")
                     continue
 
                 labels = [str(item.get(sel["label_field"], f"#{i}")) for i, item in enumerate(items)]
