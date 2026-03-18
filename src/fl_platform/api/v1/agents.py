@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import json
 import os
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from fl_platform.agents.registry import ALL_AGENTS, list_agents
@@ -249,6 +251,41 @@ async def upload_reference_file(
     with open(file_path, "wb") as f:
         f.write(content)
     return {"file_path": file_path}
+
+
+def _positions_path(settings: Settings, project_id: uuid.UUID) -> str:
+    return os.path.join(settings.artifacts_dir, str(project_id), "node_positions.json")
+
+
+@router.get("/projects/{project_id}/pipeline/node-positions")
+async def get_node_positions(
+    project_id: uuid.UUID,
+    settings: Settings = Depends(get_settings),
+):
+    """Return saved node positions for the pipeline DAG."""
+    path = _positions_path(settings, project_id)
+    if os.path.exists(path):
+        with open(path) as f:
+            return json.load(f)
+    return {}
+
+
+class NodePositionsBody(BaseModel):
+    positions: dict[str, dict]
+
+
+@router.put("/projects/{project_id}/pipeline/node-positions")
+async def save_node_positions(
+    project_id: uuid.UUID,
+    body: NodePositionsBody,
+    settings: Settings = Depends(get_settings),
+):
+    """Save node positions for the pipeline DAG."""
+    path = _positions_path(settings, project_id)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(body.positions, f)
+    return {"status": "ok"}
 
 
 @router.get(

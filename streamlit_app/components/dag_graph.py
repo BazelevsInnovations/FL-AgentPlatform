@@ -2,12 +2,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-try:
-    from streamlit_agraph import agraph, Node, Edge, Config
-    HAS_AGRAPH = True
-except ImportError:
-    HAS_AGRAPH = False
-
+from components.dag_vis import dag_vis
 
 DEPT_COLORS = {
     "Director": "#4A90D9",
@@ -28,15 +23,23 @@ STATUS_COLORS = {
 }
 
 
-def render_dag(dag_data: dict, runs: dict | None = None) -> str | None:
-    """Render DAG and return clicked node ID (agent name) or None."""
-    if not HAS_AGRAPH:
-        return _render_text_dag(dag_data, runs)
+def render_dag(
+    dag_data: dict,
+    runs: dict | None = None,
+    saved_positions: dict | None = None,
+) -> dict | None:
+    """Render DAG and return interaction event dict or None.
+
+    Returns:
+        {"event": "click", "node_id": "..."} on node click
+        {"event": "positions_changed", "positions": {...}} on drag end
+        None if no interaction
+    """
+    agents = dag_data.get("agents", {})
 
     nodes = []
     edges = []
 
-    agents = dag_data.get("agents", {})
     for name, info in agents.items():
         dept = info.get("department", "")
         color = DEPT_COLORS.get(dept, "#7F8C8D")
@@ -45,60 +48,24 @@ def render_dag(dag_data: dict, runs: dict | None = None) -> str | None:
             status = runs[name].get("status", "pending")
             color = STATUS_COLORS.get(status, color)
 
-        label = info["display_name"]
-
-        nodes.append(
-            Node(
-                id=name,
-                label=label,
-                size=30,
-                color=color,
-                title=f"{dept} | Step {info['step']}\nClick to run/view",
-                font={"size": 14, "color": "#222222"},
-                shape="dot",
-            )
-        )
+        nodes.append({
+            "id": name,
+            "label": info["display_name"],
+            "color": color,
+            "size": 30,
+            "title": f"{dept} | Step {info['step']}\nDrag to reposition",
+            "level": info["step"],
+        })
 
         for dep in info.get("depends_on", []):
-            edges.append(Edge(source=dep, target=name))
+            edges.append({"from": dep, "to": name})
 
-    config = Config(
-        width=1400,
-        height=1000,
-        directed=True,
-        hierarchical=True,
-        physics=False,
-        nodeHighlightBehavior=True,
-        highlightColor="#F5A623",
-        collapsible=False,
-        node={"highlightStrokeColor": "#F5A623"},
-        levelSeparation=120,
-        nodeSpacing=200,
-        treeSpacing=250,
+    result = dag_vis(
+        nodes=nodes,
+        edges=edges,
+        positions=saved_positions or {},
+        height=800,
+        key="pipeline_dag",
     )
 
-    clicked = agraph(nodes=nodes, edges=edges, config=config)
-    return clicked
-
-
-def _render_text_dag(dag_data: dict, runs: dict | None = None) -> str | None:
-    agents = dag_data.get("agents", {})
-    steps = dag_data.get("steps", [])
-    clicked = None
-
-    for step in steps:
-        step_agents = {n: a for n, a in agents.items() if a["step"] == step}
-        if not step_agents:
-            continue
-
-        st.markdown(f"### Step {step}")
-        for name, info in step_agents.items():
-            status_icon = "⬜"
-            if runs and name in runs:
-                s = runs[name].get("status", "pending")
-                status_icon = {"completed": "✅", "running": "🔄", "failed": "❌", "pending": "⬜"}.get(s, "⬜")
-
-            if st.button(f"{status_icon} {info['display_name']}", key=f"btn_{name}"):
-                clicked = name
-
-    return clicked
+    return result

@@ -45,7 +45,52 @@ try:
     except Exception:
         pass
 
-    clicked = render_dag(dag_data, runs)
+    # Load saved node positions
+    saved_positions = {}
+    try:
+        pos_resp = httpx.get(
+            f"{API_BASE}/api/v1/projects/{project_id}/pipeline/node-positions",
+            timeout=5,
+        )
+        if pos_resp.status_code == 200:
+            saved_positions = pos_resp.json()
+    except Exception:
+        pass
+
+    result = render_dag(dag_data, runs, saved_positions=saved_positions)
+
+    # Handle events from the DAG component
+    clicked = None
+    if result and isinstance(result, dict):
+        event = result.get("event")
+
+        if event == "click":
+            clicked = result.get("node_id")
+
+        elif event == "positions_changed":
+            new_positions = result.get("positions", {})
+            if new_positions:
+                try:
+                    httpx.put(
+                        f"{API_BASE}/api/v1/projects/{project_id}/pipeline/node-positions",
+                        json={"positions": new_positions},
+                        timeout=5,
+                    )
+                except Exception:
+                    pass  # Save silently; positions persist on next reload
+
+    # Reset positions button
+    if saved_positions:
+        if st.button("Reset Layout", help="Reset node positions to automatic layout"):
+            try:
+                httpx.put(
+                    f"{API_BASE}/api/v1/projects/{project_id}/pipeline/node-positions",
+                    json={"positions": {}},
+                    timeout=5,
+                )
+                st.rerun()
+            except Exception as e:
+                st.error(f"Failed to reset: {e}")
 
     # --- Controls: Run Step / Run All ---
     st.markdown("---")
